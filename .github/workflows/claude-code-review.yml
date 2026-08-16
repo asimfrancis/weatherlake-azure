@@ -1,0 +1,29 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  claude-review:
+    runs-on: ubuntu-latest
+    # Skip fork PRs outright: they never receive repo secrets, so this would
+    # otherwise fail loudly on every external contribution instead of just
+    # not running.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Review this pull request for correctness bugs, security issues
+            (especially Terraform/Azure credential handling and GitHub
+            Actions permissions/secrets scoping), and unnecessary
+            complexity. Post inline comments on specific lines. Do not make
+            code changes.
+          claude_args: |
+            --max-turns 5

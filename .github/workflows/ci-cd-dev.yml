@@ -1,0 +1,31 @@
+name: Dev DataOps CI Pipeline
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  dev-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - name: Install Dev Tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 bandit pytest
+    - name: Install Ingestion Runtime Deps
+      if: hashFiles('src/ingestion/requirements.txt') != ''
+      run: pip install -r src/ingestion/requirements.txt
+    - name: Bandit Security Scan
+      if: hashFiles('src/**') != ''
+      run: bandit -r src/ -ll -v
+    - name: Flake8 Lint
+      if: hashFiles('src/**') != ''
+      run: flake8 src/ --count --max-line-length=127 --statistics
+    - name: Unit Tests
+      if: hashFiles('tests/**') != ''
+      run: pytest tests/
